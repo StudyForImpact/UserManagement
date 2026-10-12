@@ -19,6 +19,38 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState({ type: '', text: '' });
+  //search functionality
+  const [searchId, setSearchId] = useState('');
+  const [searchedUser, setSearchedUser] = useState(null);
+  const [searchError, setSearchError] = useState('');
+
+  const handleGetUserById = async (e) => {
+    e.preventDefault();
+
+    setSearchedUser(null);
+    setSearchError('');
+
+    if (!searchId.trim()) {
+      setSearchError('Please enter a user ID.');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/users/${encodeURIComponent(searchId.trim())}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to find user.');
+      }
+
+      setSearchedUser(data.user);
+    } catch (error) {
+      setSearchError(error.message || 'Something went wrong.');
+    }
+  };
 
   const loadUsers = useCallback(async () => {
     try {
@@ -111,7 +143,7 @@ export default function App() {
         <div>
           <p className="eyebrow">ADMIN WORKSPACE</p>
           <h1>User Management</h1>
-          <p className="subtitle">Create, update, and manage your user directory.</p>
+          <p className="subtitle">Create, read, update, and manage your user directory.</p>
         </div>
       </header>
 
@@ -162,6 +194,34 @@ export default function App() {
           </div>
           <button className="button button-light" onClick={loadUsers} disabled={loading}>↻ Refresh</button>
         </div>
+        <section className="search-user">
+          <h2>Get User By ID</h2>
+
+          <form onSubmit={handleGetUserById}>
+            <input
+              type="text"
+              placeholder="Enter MongoDB user ID"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+            />
+
+            <button className="button button-primary" type="submit">Get User</button>
+          </form>
+
+          {searchError && (
+            <p className="error">{searchError}</p>
+          )}
+
+          {searchedUser && (
+            <div className="user-result">
+              <h3>User Details</h3>
+              <p><strong>ID:</strong> {searchedUser._id}</p>
+              <p><strong>Name:</strong> {searchedUser.name}</p>
+              <p><strong>Email:</strong> {searchedUser.email}</p>
+              <p><strong>Age:</strong> {searchedUser.age}</p>
+            </div>
+          )}
+        </section>
         {loading ? <div className="empty-state">Loading users…</div> : users.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">◎</div>
